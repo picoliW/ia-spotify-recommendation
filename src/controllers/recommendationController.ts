@@ -148,17 +148,6 @@ export const getQuestions = (req: Request, res: Response) => {
       ],
     },
     {
-      id: "currentActivity",
-      question: "O que você está fazendo agora?",
-      options: [
-        "Trabalhando",
-        "Estudando",
-        "Exercitando",
-        "Relaxando",
-        "Socializando",
-      ],
-    },
-    {
       id: "minReleaseYear",
       question: "Deseja filtrar por ano mínimo de lançamento? (opcional)",
       type: "number",
