@@ -148,6 +148,11 @@ export const getQuestions = (req: Request, res: Response) => {
       ],
     },
     {
+      id: "recommendationType",
+      question: "Você quer que recomende músicas ou artistas?",
+      options: ["Músicas", "Artistas"],
+    },
+    {
       id: "minReleaseYear",
       question: "Deseja filtrar por ano mínimo de lançamento? (opcional)",
       type: "number",
