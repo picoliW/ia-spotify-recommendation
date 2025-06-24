@@ -30,7 +30,7 @@ export const getRecommendations = async (
           popularity: artist.popularity,
           image: artist.images[0]?.url || null,
         })),
-        message: `Aqui estão alguns artistas recomendados para você enquanto ${preferences.currentActivity}`,
+        message: ``,
       };
     } else {
       const tracks = await searchTracksByGenre(
@@ -50,7 +50,7 @@ export const getRecommendations = async (
           release_date: track.album.release_date,
           album_image: track.album.images[0]?.url || null,
         })),
-        message: `Aqui estão algumas músicas recomendadas para você enquanto ${preferences.currentActivity}`,
+        message: ``,
       };
     }
   } catch (error) {
