@@ -1,5 +1,6 @@
 export interface UserPreferences {
   favoriteGenres: string[];
+  genreWeights?: Record<string, number>;
   currentActivity: string;
   recommendationType: "tracks" | "artists";
   minReleaseYear?: number;
@@ -22,10 +23,12 @@ export interface SpotifyArtist {
   genres: string[];
   external_url: string;
   popularity?: number;
+  image?: string | null;
 }
 
 export interface RecommendationResponse {
   tracks?: SpotifyTrack[];
   artists?: SpotifyArtist[];
   message: string;
+  genreWeights?: Record<string, number>;
 }

@@ -16,7 +16,8 @@ export const getRecommendations = async (
 
     if (preferences.recommendationType === "artists") {
       const artists = await searchArtistsByGenre(
-        preferences.favoriteGenres[0],
+        preferences.favoriteGenres,
+        preferences.genreWeights || {},
         userAccessToken,
         preferences.minReleaseYear
       );
@@ -31,10 +32,12 @@ export const getRecommendations = async (
           image: artist.images[0]?.url || null,
         })),
         message: `Aqui estão alguns artistas recomendados para você enquanto ${preferences.currentActivity}`,
+        genreWeights: preferences.genreWeights,
       };
     } else {
       const tracks = await searchTracksByGenre(
-        preferences.favoriteGenres[0],
+        preferences.favoriteGenres,
+        preferences.genreWeights || {},
         userAccessToken,
         preferences.minReleaseYear
       );
@@ -51,6 +54,7 @@ export const getRecommendations = async (
           album_image: track.album.images[0]?.url || null,
         })),
         message: `Aqui estão algumas músicas recomendadas para você enquanto ${preferences.currentActivity}`,
+        genreWeights: preferences.genreWeights,
       };
     }
   } catch (error) {
@@ -60,47 +64,83 @@ export const getRecommendations = async (
 };
 
 async function searchTracksByGenre(
-  genre: string,
+  genres: string[],
+  weights: Record<string, number>,
   token: string,
   minYear?: number
 ): Promise<any[]> {
-  let query = `genre:"${genre}"`;
-  if (minYear) {
-    query += ` year:${minYear}-${new Date().getFullYear()}`;
+  const weightedGenres = genres.map((genre) => ({
+    genre,
+    weight: weights[genre] || 20,
+  }));
+
+  weightedGenres.sort((a, b) => b.weight - a.weight);
+
+  const results: any[] = [];
+
+  for (const { genre } of weightedGenres) {
+    let query = `genre:"${genre}"`;
+    if (minYear) {
+      query += ` year:${minYear}-${new Date().getFullYear()}`;
+    }
+
+    try {
+      const response = await axios.get(`${SPOTIFY_API}/search`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          q: query,
+          type: "track",
+          limit: Math.floor(50 / genres.length),
+        },
+      });
+
+      results.push(...response.data.tracks.items);
+    } catch (error) {
+      console.error(`Error searching for genre ${genre}:`, error);
+    }
   }
 
-  const response = await axios.get(`${SPOTIFY_API}/search`, {
-    headers: { Authorization: `Bearer ${token}` },
-    params: {
-      q: query,
-      type: "track",
-      limit: 50,
-    },
-  });
-
-  return response.data.tracks.items;
+  return results;
 }
 
 async function searchArtistsByGenre(
-  genre: string,
+  genres: string[],
+  weights: Record<string, number>,
   token: string,
   minYear?: number
 ): Promise<any[]> {
-  let query = `genre:"${genre}"`;
-  if (minYear) {
-    query += ` year:${minYear}-${new Date().getFullYear()}`;
+  const weightedGenres = genres.map((genre) => ({
+    genre,
+    weight: weights[genre] || 20,
+  }));
+
+  weightedGenres.sort((a, b) => b.weight - a.weight);
+
+  const results: any[] = [];
+
+  for (const { genre } of weightedGenres) {
+    let query = `genre:"${genre}"`;
+    if (minYear) {
+      query += ` year:${minYear}-${new Date().getFullYear()}`;
+    }
+
+    try {
+      const response = await axios.get(`${SPOTIFY_API}/search`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          q: query,
+          type: "artist",
+          limit: Math.floor(50 / genres.length),
+        },
+      });
+
+      results.push(...response.data.artists.items);
+    } catch (error) {
+      console.error(`Error searching for genre ${genre}:`, error);
+    }
   }
 
-  const response = await axios.get(`${SPOTIFY_API}/search`, {
-    headers: { Authorization: `Bearer ${token}` },
-    params: {
-      q: query,
-      type: "artist",
-      limit: 50,
-    },
-  });
-
-  return response.data.artists.items;
+  return results;
 }
 
 async function checkTokenValidity(token: string): Promise<void> {
