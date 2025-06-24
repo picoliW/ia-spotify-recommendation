@@ -2,139 +2,28 @@ import { Request, Response } from "express";
 import { getRecommendations } from "../services/spotifyService";
 import { UserPreferences } from "../models/types";
 
+const genreWeights: Record<string, [number, number]> = {
+  brazil: [0, 20],
+  rock: [10, 30],
+  anime: [5, 25],
+  ambient: [0, 15],
+  funk: [10, 30],
+  chill: [0, 20],
+  "k-pop": [5, 25],
+  indie: [10, 30],
+  pop: [10, 30],
+  "hip-hop": [10, 30],
+  sertanejo: [15, 35],
+};
+
+const relevantGenres = Object.keys(genreWeights);
+
 export const getQuestions = (req: Request, res: Response) => {
   const questions = [
     {
       id: "favoriteGenres",
       question: "Quais são seus gêneros musicais preferidos?",
-      options: [
-        "acoustic",
-        "afrobeat",
-        "alt-rock",
-        "alternative",
-        "ambient",
-        "anime",
-        "black-metal",
-        "bluegrass",
-        "blues",
-        "bossanova",
-        "brazil",
-        "breakbeat",
-        "british",
-        "cantopop",
-        "chicago-house",
-        "children",
-        "chill",
-        "classical",
-        "club",
-        "comedy",
-        "country",
-        "dance",
-        "dancehall",
-        "death-metal",
-        "deep-house",
-        "detroit-techno",
-        "disco",
-        "disney",
-        "drum-and-bass",
-        "dub",
-        "dubstep",
-        "edm",
-        "electro",
-        "electronic",
-        "emo",
-        "folk",
-        "forro",
-        "french",
-        "funk",
-        "garage",
-        "german",
-        "gospel",
-        "goth",
-        "grindcore",
-        "groove",
-        "grunge",
-        "guitar",
-        "happy",
-        "hard-rock",
-        "hardcore",
-        "hardstyle",
-        "heavy-metal",
-        "hip-hop",
-        "holidays",
-        "honky-tonk",
-        "house",
-        "idm",
-        "indian",
-        "indie",
-        "indie-pop",
-        "industrial",
-        "iranian",
-        "j-dance",
-        "j-idol",
-        "j-pop",
-        "j-rock",
-        "jazz",
-        "k-pop",
-        "kids",
-        "latin",
-        "latino",
-        "malay",
-        "mandopop",
-        "metal",
-        "metal-misc",
-        "metalcore",
-        "minimal-techno",
-        "movies",
-        "mpb",
-        "new-age",
-        "new-release",
-        "opera",
-        "pagode",
-        "party",
-        "philippines-opm",
-        "piano",
-        "pop",
-        "pop-film",
-        "post-dubstep",
-        "power-pop",
-        "progressive-house",
-        "psych-rock",
-        "punk",
-        "punk-rock",
-        "r-n-b",
-        "rainy-day",
-        "reggae",
-        "reggaeton",
-        "road-trip",
-        "rock",
-        "rock-n-roll",
-        "rockabilly",
-        "romance",
-        "sad",
-        "salsa",
-        "samba",
-        "sertanejo",
-        "show-tunes",
-        "singer-songwriter",
-        "ska",
-        "sleep",
-        "songwriter",
-        "soul",
-        "soundtracks",
-        "spanish",
-        "study",
-        "summer",
-        "swedish",
-        "synth-pop",
-        "tango",
-        "techno",
-        "trance",
-        "trip-hop",
-        "turkish",
-        "work-out",
-        "world-music",
-      ],
+      options: relevantGenres,
     },
     {
       id: "currentActivity",
@@ -173,26 +62,64 @@ export const submitPreferences = async (req: Request, res: Response) => {
       });
     }
 
-    const body = req.body;
-    const preferences: UserPreferences = {
-      favoriteGenres: body.favoriteGenres,
-      currentActivity: body.currentActivity,
-      recommendationType:
-        body.recommendationType === "Artistas" ? "artists" : "tracks",
-      minReleaseYear: body.minReleaseYear
-        ? parseInt(body.minReleaseYear)
-        : undefined,
-    };
+    const {
+      favoriteGenres,
+      currentActivity,
+      recommendationType,
+      minReleaseYear,
+    } = req.body;
 
-    if (
-      !preferences.favoriteGenres ||
-      !preferences.currentActivity ||
-      !preferences.recommendationType
-    ) {
+    if (!favoriteGenres || !currentActivity || !recommendationType) {
       return res.status(400).json({
         error: "Por favor, responda todas as perguntas obrigatórias",
       });
     }
+
+    const genreScores: Record<string, number> = {};
+    relevantGenres.forEach((g) => (genreScores[g] = 0));
+
+    for (const genre of favoriteGenres) {
+      if (genre in genreScores) {
+        const [min, max] = genreWeights[genre];
+        genreScores[genre] += (min + max) / 2;
+      }
+    }
+
+    switch (currentActivity) {
+      case "Trabalhando":
+        genreScores.chill += 10;
+        genreScores.ambient += 10;
+        break;
+      case "Estudando":
+        genreScores.ambient += 15;
+        genreScores.chill += 10;
+        break;
+      case "Exercitando":
+        genreScores["hip-hop"] += 15;
+        genreScores.funk += 10;
+        break;
+      case "Relaxando":
+        genreScores.chill += 15;
+        genreScores.indie += 5;
+        break;
+      case "Socializando":
+        genreScores.pop += 10;
+        genreScores["k-pop"] += 5;
+        break;
+    }
+
+    const sortedGenres = Object.entries(genreScores)
+      .sort((a, b) => b[1] - a[1])
+      .map(([genre]) => genre)
+      .slice(0, 3);
+
+    const preferences: UserPreferences = {
+      favoriteGenres: sortedGenres,
+      currentActivity,
+      recommendationType:
+        recommendationType === "Artistas" ? "artists" : "tracks",
+      minReleaseYear: minReleaseYear ? parseInt(minReleaseYear) : undefined,
+    };
 
     const recommendations = await getRecommendations(preferences, userToken);
     res.json(recommendations);
