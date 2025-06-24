@@ -28,6 +28,7 @@ export const getRecommendations = async (
           genres: artist.genres,
           external_url: artist.external_urls.spotify,
           popularity: artist.popularity,
+          image: artist.images[0]?.url || null,
         })),
         message: `Aqui estão alguns artistas recomendados para você enquanto ${preferences.currentActivity}`,
       };
@@ -47,6 +48,7 @@ export const getRecommendations = async (
           preview_url: track.preview_url,
           external_url: track.external_urls.spotify,
           release_date: track.album.release_date,
+          album_image: track.album.images[0]?.url || null,
         })),
         message: `Aqui estão algumas músicas recomendadas para você enquanto ${preferences.currentActivity}`,
       };

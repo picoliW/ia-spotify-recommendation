@@ -12,7 +12,8 @@ export interface SpotifyTrack {
   album: string;
   preview_url: string | null;
   external_url: string;
-  release_date?: string;
+  release_date: string;
+  album_image: string | null;
 }
 
 export interface SpotifyArtist {
