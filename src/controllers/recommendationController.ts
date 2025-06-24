@@ -37,6 +37,22 @@ export const getQuestions = (req: Request, res: Response) => {
       ],
     },
     {
+      id: "mood",
+      question: "Como você está se sentindo agora?",
+      options: ["Feliz", "Triste", "Motivado", "Cansado", "Ansioso"],
+    },
+    {
+      id: "environment",
+      question: "Onde você está?",
+      options: [
+        "Em casa",
+        "Na rua",
+        "Na academia",
+        "No transporte",
+        "Com amigos",
+      ],
+    },
+    {
       id: "recommendationType",
       question: "Você quer que recomende músicas ou artistas?",
       options: ["Músicas", "Artistas"],
@@ -65,11 +81,19 @@ export const submitPreferences = async (req: Request, res: Response) => {
     const {
       favoriteGenres,
       currentActivity,
+      mood,
+      environment,
       recommendationType,
       minReleaseYear,
     } = req.body;
 
-    if (!favoriteGenres || !currentActivity || !recommendationType) {
+    if (
+      !favoriteGenres ||
+      !currentActivity ||
+      !mood ||
+      !environment ||
+      !recommendationType
+    ) {
       return res.status(400).json({
         error: "Por favor, responda todas as perguntas obrigatórias",
       });
@@ -105,6 +129,51 @@ export const submitPreferences = async (req: Request, res: Response) => {
       case "Socializando":
         genreScores.pop += 10;
         genreScores["k-pop"] += 5;
+        break;
+    }
+
+    switch (mood) {
+      case "Feliz":
+        genreScores.pop += 10;
+        genreScores["k-pop"] += 10;
+        break;
+      case "Triste":
+        genreScores.indie += 10;
+        genreScores.ambient += 10;
+        break;
+      case "Motivado":
+        genreScores["hip-hop"] += 10;
+        genreScores.rock += 10;
+        break;
+      case "Cansado":
+        genreScores.chill += 10;
+        genreScores.ambient += 5;
+        break;
+      case "Ansioso":
+        genreScores.chill += 10;
+        genreScores.indie += 5;
+        break;
+    }
+
+    switch (environment) {
+      case "Em casa":
+        genreScores.mp3 += 0;
+        break;
+      case "Na rua":
+        genreScores.funk += 10;
+        genreScores["hip-hop"] += 5;
+        break;
+      case "Na academia":
+        genreScores["hip-hop"] += 10;
+        genreScores.rock += 5;
+        break;
+      case "No transporte":
+        genreScores.chill += 5;
+        genreScores.pop += 5;
+        break;
+      case "Com amigos":
+        genreScores.funk += 10;
+        genreScores.pop += 10;
         break;
     }
 
